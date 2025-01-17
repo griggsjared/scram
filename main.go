@@ -18,7 +18,33 @@ const (
 
 func main() {
 
-	//get the phrase from the command line arguments
+	phrase := getPhrase()
+	chars := getChars(phrase, baseChars)
+  sPhrase := getScrambledPhrase(phrase, chars)
+
+	//while the scrambled phrase does not equal the original phrase, loop through each rune in the phrase and randomly get a new character for that runes index if it did not match
+	//this loop will continue until all characters in the scrambled string match the original string.
+	for !slices.Equal(phrase, sPhrase) {
+		time.Sleep(time.Second / time.Duration(baseSpeedFactor))
+		for i := range phrase {
+			if phrase[i] != sPhrase[i] {
+				sPhrase[i] = randomChar(chars)
+			} else {
+				sPhrase[i] = phrase[i]
+			}
+		}
+		fmt.Printf("\r%s", string(sPhrase))
+	}
+	fmt.Println()
+}
+
+// randomChar returns a random character from the provided slice of runes
+func randomChar(fromChars []rune) rune {
+	return fromChars[rand.Intn(len(fromChars))]
+}
+
+// getPhrase gets a provided phrase from stdin or uses a default phrase if no phrase is provided
+func getPhrase() []rune {
 	var phrase string
 	ioArgs := os.Args[1:]
 	if len(ioArgs) > 0 {
@@ -36,41 +62,26 @@ func main() {
 		phrase = defaultPhrases[rand.Intn(len(defaultPhrases))]
 	}
 
-	//once we have the phrase we want to work with it as a slice of runes
-	rPhrase := []rune(phrase)
-
-	//add the characters from the phrase to the baseChars so that the scrambled phrase can contain the original characters
-	rChars := []rune(baseChars)
-	for i := 0; i < len(rPhrase); i++ {
-		char := rPhrase[i]
-		if !slices.Contains(rChars, char) {
-			rChars = append(rChars, char)
-		}
-	}
-
-	//scramble the phrase
-	var scrambled []rune
-	for i := 0; i < len(rPhrase); i++ {
-		scrambled = append(scrambled, randomChar(rChars))
-	}
-
-	//while the scrambled phrase does not equal the original phrase, loop through each rune in the phrase and randomly get a new character for that runes index if it did not match
-	//this loop will continue until all characters in the scrambled string match the original string.
-	for !slices.Equal(rPhrase, scrambled) {
-		time.Sleep(time.Second / time.Duration(baseSpeedFactor))
-    for i := range rPhrase {
-      if rPhrase[i] != scrambled[i] {
-        scrambled[i] = randomChar(rChars)
-      } else {
-        scrambled[i] = rPhrase[i]
-      }
-    }
-    fmt.Printf("\r%s", string(scrambled))
-	}
-	fmt.Println()
+	return []rune(phrase)
 }
 
-// randomChar returns a random character from the provided slice of runes
-func randomChar(fromChars []rune) rune {
-	return fromChars[rand.Intn(len(fromChars))]
+// getChars returns a slice of runes that contains the base characters and any characters that are not in the base characters
+func getChars(phrase []rune, baseChars string) []rune {
+	chars := []rune(baseChars)
+	for i := 0; i < len(phrase); i++ {
+		char := phrase[i]
+		if !slices.Contains(chars, char) {
+			chars = append(chars, char)
+		}
+	}
+	return chars
+}
+
+// getScrambledPhrase returns a scrambled phrase based on the provided phrase and characters
+func getScrambledPhrase(phrase, chars []rune) []rune {
+	var s []rune
+	for i := 0; i < len(phrase); i++ {
+		s = append(s, randomChar(chars))
+	}
+	return s
 }
