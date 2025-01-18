@@ -115,14 +115,15 @@ func newConfig(i *inputArgs) *config {
 
 	return &config{
 		phrase:      phrase,
-		chars:       getChars(phrase, baseChars),
+		chars:       []rune(baseChars),
 		speedFactor: i.speedFactor,
 	}
 }
 
 // scram yields a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
 func (c *config) scram() iter.Seq[[]rune] {
-	scram := getScrambledPhrase(c.phrase, c.chars)
+	scram := scramblePhrase(c.phrase, c.chars)
+  chars := mergeChars(c.phrase, c.chars)
 
 	return func(yield func(p []rune) bool) {
 		for !slices.Equal(c.phrase, scram) {
@@ -130,7 +131,7 @@ func (c *config) scram() iter.Seq[[]rune] {
 
 			for i := range c.phrase {
 				if c.phrase[i] != scram[i] {
-					scram[i] = randomChar(c.chars)
+					scram[i] = randomChar(chars)
 				} else {
 					scram[i] = c.phrase[i]
 				}
@@ -149,9 +150,9 @@ func randomChar(fromChars []rune) rune {
 	return fromChars[rand.Intn(len(fromChars))]
 }
 
-// getChars returns a slice of runes that contains the base characters and any characters that are not in the base characters
-func getChars(phrase []rune, baseChars string) []rune {
-	chars := []rune(baseChars)
+// mergeChars returns a slice of runes that contains the base characters and any characters that are not in the base characters
+func mergeChars(phrase []rune, baseChars []rune) []rune {
+	chars := baseChars
 	for i := 0; i < len(phrase); i++ {
 		char := phrase[i]
 		if !slices.Contains(chars, char) {
@@ -161,8 +162,8 @@ func getChars(phrase []rune, baseChars string) []rune {
 	return chars
 }
 
-// getScrambledPhrase returns a scrambled phrase based on the provided phrase and characters
-func getScrambledPhrase(phrase, chars []rune) []rune {
+// scramblePhrase returns a scrambled phrase based on the provided phrase and characters
+func scramblePhrase(phrase, chars []rune) []rune {
 	var s []rune
 	for i := 0; i < len(phrase); i++ {
 		s = append(s, randomChar(chars))
