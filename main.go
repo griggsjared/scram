@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"iter"
 	"math/rand"
 	"strings"
 	"time"
@@ -18,26 +19,13 @@ const (
 )
 
 func main() {
-
 	input := parseInputArgs()
 	config := newConfig(input)
-	sPhrase := getScrambledPhrase(config.phrase, config.chars)
 
-	//while the scrambled phrase does not equal the original phrase, loop through each rune in the phrase and randomly get a new character for that runes index if it did not match
-	//this loop will continue until all characters in the scrambled string match the original string.
-	phrase := config.phrase
-	maxLen := len(string(phrase)) //will get the length of the string we are displaying
-	fmt.Print("\033[H\033[2J") //clear the screen
-	for !slices.Equal(phrase, sPhrase) {
-		time.Sleep(time.Second / time.Duration(config.speedFactor))
-		for i := range phrase {
-			if phrase[i] != sPhrase[i] {
-				sPhrase[i] = randomChar(config.chars)
-			} else {
-				sPhrase[i] = phrase[i]
-			}
-		}
-		display := string(sPhrase)
+	maxLen := len(string(config.phrase))
+	fmt.Print("\033[H\033[2J")
+	for p := range config.scram() {
+		display := string(p)
 		if len(display) > maxLen {
 			maxLen = len(display)
 		}
@@ -95,7 +83,6 @@ type config struct {
 
 // newConfig returns a new config struct based on the provided input arguments
 func newConfig(i *inputArgs) *config {
-
 	//get the phrase from the input args, if there wasnt one we can get one from a list of premades
 	phrase := []rune(i.phrase)
 	if len(phrase) == 0 {
@@ -130,6 +117,29 @@ func newConfig(i *inputArgs) *config {
 		phrase:      phrase,
 		chars:       getChars(phrase, baseChars),
 		speedFactor: i.speedFactor,
+	}
+}
+
+// generateScram returns a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
+func (c *config) scram() iter.Seq[[]rune] {
+	scram := getScrambledPhrase(c.phrase, c.chars)
+
+	return func(yield func(p []rune) bool) {
+		for !slices.Equal(c.phrase, scram) {
+			time.Sleep(time.Second / time.Duration(c.speedFactor))
+
+			for i := range c.phrase {
+				if c.phrase[i] != scram[i] {
+					scram[i] = randomChar(c.chars)
+				} else {
+					scram[i] = c.phrase[i]
+				}
+
+				if !yield(scram) {
+					return
+				}
+			}
+		}
 	}
 }
 
