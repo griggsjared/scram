@@ -120,7 +120,7 @@ func newConfig(i *inputArgs) *config {
 	}
 }
 
-// generateScram returns a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
+// scram yields a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
 func (c *config) scram() iter.Seq[[]rune] {
 	scram := getScrambledPhrase(c.phrase, c.chars)
 
@@ -135,9 +135,10 @@ func (c *config) scram() iter.Seq[[]rune] {
 					scram[i] = c.phrase[i]
 				}
 
-				if !yield(scram) {
-					return
-				}
+			}
+
+			if !yield(scram) {
+				return
 			}
 		}
 	}
