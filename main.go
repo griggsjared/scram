@@ -122,9 +122,8 @@ func newConfig(i *inputArgs) *config {
 
 // scram yields a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
 func (c *config) scram() iter.Seq[[]rune] {
-	scram := scramblePhrase(c.phrase, c.chars)
-  chars := mergeChars(c.phrase, c.chars)
-
+	chars := mergeChars(c.phrase, c.chars)
+	scram := scramblePhrase(c.phrase, chars)
 	return func(yield func(p []rune) bool) {
 		for !slices.Equal(c.phrase, scram) {
 			time.Sleep(time.Second / time.Duration(c.speedFactor))
