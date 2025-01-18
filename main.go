@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -25,6 +26,8 @@ func main() {
 	//while the scrambled phrase does not equal the original phrase, loop through each rune in the phrase and randomly get a new character for that runes index if it did not match
 	//this loop will continue until all characters in the scrambled string match the original string.
 	phrase := config.phrase
+	maxLen := len(string(phrase)) //will get the length of the string we are displaying
+	fmt.Print("\033[H\033[2J") //clear the screen
 	for !slices.Equal(phrase, sPhrase) {
 		time.Sleep(time.Second / time.Duration(config.speedFactor))
 		for i := range phrase {
@@ -34,7 +37,12 @@ func main() {
 				sPhrase[i] = phrase[i]
 			}
 		}
-		fmt.Printf("\r%s", string(sPhrase))
+		display := string(sPhrase)
+		if len(display) > maxLen {
+			maxLen = len(display)
+		}
+		fmt.Printf("\r%s", strings.Repeat(" ", maxLen)) //will write out max found length of display with blank chars
+		fmt.Printf("\r%s", display)
 	}
 	fmt.Println()
 }
