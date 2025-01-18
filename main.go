@@ -1,34 +1,35 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
-	"os"
 	"time"
 
 	"golang.org/x/exp/slices"
 )
 
 const (
-	//baseChars is the base characters that can be used to scramble the phrase
-	baseChars string = "!@#$%^&*(){}[]abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	//baseSpeedFactor is the base speed factor for the scramble speed.
-	baseSpeedFactor int = 20
+	alphaChars      string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678u"
+	numberChars     string = "0123456789"
+	specialChars    string = "!@#$%^&*(){}[]|\\;:'\",.<>/?`~"
+	baseSpeedFactor int    = 20
 )
 
 func main() {
 
-	phrase := getPhrase()
-	chars := getChars(phrase, baseChars)
-  sPhrase := getScrambledPhrase(phrase, chars)
+	input := parseInputArgs()
+	config := newConfig(input)
+	sPhrase := getScrambledPhrase(config.phrase, config.chars)
 
 	//while the scrambled phrase does not equal the original phrase, loop through each rune in the phrase and randomly get a new character for that runes index if it did not match
 	//this loop will continue until all characters in the scrambled string match the original string.
+	phrase := config.phrase
 	for !slices.Equal(phrase, sPhrase) {
-		time.Sleep(time.Second / time.Duration(baseSpeedFactor))
+		time.Sleep(time.Second / time.Duration(config.speedFactor))
 		for i := range phrase {
 			if phrase[i] != sPhrase[i] {
-				sPhrase[i] = randomChar(chars)
+				sPhrase[i] = randomChar(config.chars)
 			} else {
 				sPhrase[i] = phrase[i]
 			}
@@ -38,20 +39,57 @@ func main() {
 	fmt.Println()
 }
 
-// randomChar returns a random character from the provided slice of runes
-func randomChar(fromChars []rune) rune {
-	return fromChars[rand.Intn(len(fromChars))]
+// inputArgs struct that contains the input arguments
+type inputArgs struct {
+	phrase      string
+	incAlpha    bool
+	incNumbers  bool
+	incSpecial  bool
+	incAll      bool
+	custom      string
+	speedFactor int
 }
 
-// getPhrase gets a provided phrase from stdin or uses a default phrase if no phrase is provided
-func getPhrase() []rune {
-	var phrase string
-	ioArgs := os.Args[1:]
-	if len(ioArgs) > 0 {
-		phrase = ioArgs[0]
+// parseInputArgs parses the input arguments and returns a pointer to an inputArgs struct
+func parseInputArgs() *inputArgs {
+	alpha := flag.Bool("a", false, "Include alpha characters")
+	numbers := flag.Bool("n", false, "Include numbers")
+	special := flag.Bool("s", false, "Include special characters")
+	all := flag.Bool("A", false, "Include all characters, will override the alpha, number, and special flags")
+	custom := flag.String("c", "", "Custom characters to include, will override the all, alpha, number and special flags")
+	speedFactor := flag.Int("sf", baseSpeedFactor, "Speed factor")
+
+	flag.Parse()
+
+	phrase := flag.Arg(0)
+
+	// TODO: get the phrase from a piped input
+
+	input := inputArgs{
+		phrase:      phrase,
+		incAlpha:    *alpha,
+		incNumbers:  *numbers,
+		incSpecial:  *special,
+		incAll:      *all,
+		custom:      *custom,
+		speedFactor: *speedFactor,
 	}
 
-	//if no phrase is provided, use a default phrase
+	return &input
+}
+
+// config struct that contains the phrase, characters, and speed factor
+type config struct {
+	phrase      []rune
+	chars       []rune
+	speedFactor int
+}
+
+// newConfig returns a new config struct based on the provided input arguments
+func newConfig(i *inputArgs) *config {
+
+	//get the phrase from the input args, if there wasnt one we can get one from a list of premades
+	phrase := []rune(i.phrase)
 	if len(phrase) == 0 {
 		defaultPhrases := []string{
 			"Hello, World!",
@@ -59,10 +97,37 @@ func getPhrase() []rune {
 			"This is a test",
 			"Cheers! \U0001F37B",
 		}
-		phrase = defaultPhrases[rand.Intn(len(defaultPhrases))]
+		phrase = []rune(defaultPhrases[rand.Intn(len(defaultPhrases))])
 	}
 
-	return []rune(phrase)
+	//get the base caracters from the input args.
+	var baseChars string
+	if i.incAll {
+		baseChars = alphaChars + numberChars + specialChars
+	} else if i.custom != "" {
+		baseChars = i.custom
+	} else {
+		if i.incAlpha {
+			baseChars += alphaChars
+		}
+		if i.incNumbers {
+			baseChars += numberChars
+		}
+		if i.incSpecial {
+			baseChars += specialChars
+		}
+	}
+
+	return &config{
+		phrase:      phrase,
+		chars:       getChars(phrase, baseChars),
+		speedFactor: i.speedFactor,
+	}
+}
+
+// randomChar returns a random character from the provided slice of runes
+func randomChar(fromChars []rune) rune {
+	return fromChars[rand.Intn(len(fromChars))]
 }
 
 // getChars returns a slice of runes that contains the base characters and any characters that are not in the base characters
