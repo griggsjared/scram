@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"iter"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -19,7 +21,11 @@ const (
 )
 
 func main() {
-	input := parseInputArgs()
+	input, err := parseInputArgs()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	config := newConfig(input)
 
 	maxLen := len(string(config.phrase))
@@ -47,7 +53,7 @@ type inputArgs struct {
 }
 
 // parseInputArgs parses the input arguments and returns a pointer to an inputArgs struct
-func parseInputArgs() *inputArgs {
+func parseInputArgs() (*inputArgs, error) {
 	alpha := flag.Bool("a", false, "Include alpha characters")
 	numbers := flag.Bool("n", false, "Include numbers")
 	special := flag.Bool("s", false, "Include special characters")
@@ -57,9 +63,24 @@ func parseInputArgs() *inputArgs {
 
 	flag.Parse()
 
-	phrase := flag.Arg(0)
+	var phrase string
 
-	// TODO: get the phrase from a piped input
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			phrase = scanner.Text()
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+	} else {
+		phrase = flag.Arg(0)
+	}
 
 	input := inputArgs{
 		phrase:      phrase,
@@ -71,7 +92,7 @@ func parseInputArgs() *inputArgs {
 		speedFactor: *speedFactor,
 	}
 
-	return &input
+	return &input, nil
 }
 
 // config struct that contains the phrase, characters, and speed factor
