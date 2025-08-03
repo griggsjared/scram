@@ -26,12 +26,12 @@ func main() {
 		fmt.Println(err)
 	}
 
-	config := newConfig(input)
+	app := newApp(input)
 
 	// looping through the yield payload from scram,
 	// clear the screen every iteration so it appears to
 	// descramble the phrase in place.
-	for p := range config.scram() {
+	for p := range app.scram() {
 		display := string(p)
 		clearScreen()
 		fmt.Printf("\r%s", display)
@@ -105,15 +105,15 @@ func getStdinPhrase() (string, error) {
 	return "", nil
 }
 
-// config struct that contains the phrase, characters, and speed factor
-type config struct {
+// app struct that contains the phrase, characters, and speed factor
+type app struct {
 	phrase      []rune
 	chars       []rune
 	speedFactor int
 }
 
-// newConfig returns a new config struct based on the provided input arguments
-func newConfig(i *inputArgs) *config {
+// newApp returns a new app struct based on the provided input arguments
+func newApp(i *inputArgs) *app {
 	//get the phrase from the input args, if there wasnt one we can get one from a list of premades
 	phrase := []rune(i.phrase)
 	if len(phrase) == 0 {
@@ -144,7 +144,7 @@ func newConfig(i *inputArgs) *config {
 		}
 	}
 
-	return &config{
+	return &app{
 		phrase:      phrase,
 		chars:       []rune(baseChars),
 		speedFactor: i.speedFactor,
@@ -152,7 +152,7 @@ func newConfig(i *inputArgs) *config {
 }
 
 // scram yields a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
-func (c *config) scram() iter.Seq[[]rune] {
+func (c *app) scram() iter.Seq[[]rune] {
 	chars := mergeChars(c.phrase, c.chars)
 	scram := scramblePhrase(c.phrase, chars)
 	return func(yield func(p []rune) bool) {
