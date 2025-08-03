@@ -28,14 +28,12 @@ func main() {
 
 	config := newConfig(input)
 
-	maxLen := len(string(config.phrase))
-	fmt.Print("\033[H\033[2J")
+	// looping through the yield payload from scram,
+	// clear the screen every iteration so it appears to
+	// descramble the phrase in place.
 	for p := range config.scram() {
 		display := string(p)
-		if len(display) > maxLen {
-			maxLen = len(display)
-		}
-		fmt.Printf("\r%s", strings.Repeat(" ", maxLen)) //will write out max found length of display with blank chars
+		clearScreen()
 		fmt.Printf("\r%s", display)
 	}
 	fmt.Println()
@@ -62,7 +60,6 @@ func parseInputArgs() (*inputArgs, error) {
 	speedFactor := flag.Int("sf", baseSpeedFactor, "Speed factor")
 
 	flag.Parse()
-
 
 	phrase, err := getStdinPhrase()
 	if err != nil {
@@ -202,4 +199,9 @@ func scramblePhrase(phrase, chars []rune) []rune {
 		s = append(s, randomChar(chars))
 	}
 	return s
+}
+
+// clearScreen clears the terminal screen by printing the ANSI escape codes
+func clearScreen() {
+	fmt.Print("\033[H\033[2J")
 }
