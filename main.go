@@ -63,22 +63,13 @@ func parseInputArgs() (*inputArgs, error) {
 
 	flag.Parse()
 
-	var phrase string
 
-	stat, err := os.Stdin.Stat()
+	phrase, err := getStdinPhrase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading from stdin: %w", err)
 	}
 
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			phrase = scanner.Text()
-		}
-		if err := scanner.Err(); err != nil {
-			return nil, err
-		}
-	} else {
+	if phrase == "" {
 		phrase = flag.Arg(0)
 	}
 
@@ -93,6 +84,28 @@ func parseInputArgs() (*inputArgs, error) {
 	}
 
 	return &input, nil
+}
+
+func getStdinPhrase() (string, error) {
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		lines := make([]string, 0)
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return "", err
+		}
+		if len(lines) > 0 {
+			return strings.Join(lines, "\n"), nil
+		}
+	}
+	return "", nil
 }
 
 // config struct that contains the phrase, characters, and speed factor
