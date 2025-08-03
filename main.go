@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	alphaChars      string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678u"
+	alphaChars      string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678"
 	numberChars     string = "0123456789"
 	specialChars    string = "!@#$%^&*(){}[]|\\;:'\",.<>/?`~"
 	baseSpeedFactor int    = 20
