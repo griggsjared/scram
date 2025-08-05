@@ -24,19 +24,11 @@ func main() {
 	input, err := parseInputArgs()
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	app := newApp(input)
-
-	// looping through the yield payload from scram,
-	// clear the screen every iteration so it appears to
-	// descramble the phrase in place.
-	for p := range app.scram() {
-		display := string(p)
-		clearScreen()
-		fmt.Printf("\r%s", display)
-	}
-	fmt.Println()
+	os.Exit(app.run())
 }
 
 // inputArgs struct that contains the input arguments
@@ -149,6 +141,21 @@ func newApp(i *inputArgs) *app {
 		chars:       []rune(baseChars),
 		speedFactor: i.speedFactor,
 	}
+}
+
+// run runs the app, it will loop through the yield payload from scram
+func (a *app) run() int {
+	// looping through the yield payload from scram,
+	// clear the screen every iteration so it appears to
+	// descramble the phrase in place.
+	for p := range a.scram() {
+		display := string(p)
+		clearScreen()
+		fmt.Printf("\r%s", display)
+	}
+	fmt.Println()
+
+	return 0
 }
 
 // scram yields a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
