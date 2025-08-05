@@ -40,6 +40,7 @@ type inputArgs struct {
 	incAll      bool
 	custom      string
 	speedFactor int
+	delay       int
 }
 
 // parseInputArgs parses the input arguments and returns a pointer to an inputArgs struct
@@ -50,6 +51,7 @@ func parseInputArgs() (*inputArgs, error) {
 	all := flag.Bool("A", false, "Include all characters, will override the alpha, number, and special flags")
 	custom := flag.String("c", "", "Custom characters to include, will override the all, alpha, number and special flags")
 	speedFactor := flag.Int("sf", baseSpeedFactor, "Speed factor")
+	delay := flag.Int("d", 0, "Delay in seconds before starting the scramble (default: 0)")
 
 	flag.Parse()
 
@@ -70,6 +72,7 @@ func parseInputArgs() (*inputArgs, error) {
 		incAll:      *all,
 		custom:      *custom,
 		speedFactor: *speedFactor,
+		delay:       *delay,
 	}
 
 	return &input, nil
@@ -102,6 +105,7 @@ type app struct {
 	phrase      []rune
 	chars       []rune
 	speedFactor int
+	delay       time.Duration
 }
 
 // newApp returns a new app struct based on the provided input arguments
@@ -140,6 +144,7 @@ func newApp(i *inputArgs) *app {
 		phrase:      phrase,
 		chars:       []rune(baseChars),
 		speedFactor: i.speedFactor,
+		delay:       time.Duration(i.delay),
 	}
 }
 
@@ -148,10 +153,17 @@ func (a *app) run() int {
 	// looping through the yield payload from scram,
 	// clear the screen every iteration so it appears to
 	// descramble the phrase in place.
+	i := 0
 	for p := range a.scram() {
 		display := string(p)
 		clearScreen()
 		fmt.Printf("\r%s", display)
+
+		if i == 0 {
+			//delay start of the scramble if specified
+			time.Sleep(time.Second * a.delay)
+		}
+		i++
 	}
 	fmt.Println()
 
@@ -159,20 +171,19 @@ func (a *app) run() int {
 }
 
 // scram yields a sequence of scrambled phrases that can be iterated over until the scramble matches the phrase
-func (c *app) scram() iter.Seq[[]rune] {
-	chars := mergeChars(c.phrase, c.chars)
-	scram := scramblePhrase(c.phrase, chars)
+func (a *app) scram() iter.Seq[[]rune] {
+	chars := mergeChars(a.phrase, a.chars)
+	scram := scramblePhrase(a.phrase, chars)
 	return func(yield func(p []rune) bool) {
-		for !slices.Equal(c.phrase, scram) {
-			time.Sleep(time.Second / time.Duration(c.speedFactor))
+		for !slices.Equal(a.phrase, scram) {
+			time.Sleep(time.Second / time.Duration(a.speedFactor))
 
-			for i := range c.phrase {
-				if c.phrase[i] != scram[i] {
+			for i := range a.phrase {
+				if a.phrase[i] != scram[i] {
 					scram[i] = randomChar(chars)
 				} else {
-					scram[i] = c.phrase[i]
+					scram[i] = a.phrase[i]
 				}
-
 			}
 
 			if !yield(scram) {
